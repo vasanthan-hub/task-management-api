@@ -1,0 +1,31 @@
+- hosts: servers
+  become: true
+  tasks:
+   - name: Update apt cache
+     apt:
+       update_cache: yes
+   - name: Install Docker
+     apt:
+       name: docker.io
+       state: present
+   - name: Install Docker Compose plugin              
+     apt:
+       name: docker-compose
+       state: present
+   - name: Start Docker service
+     service:
+       name: docker
+       state: started
+       enabled: yes
+   - name: Add git
+     apt:
+       name: git
+       state: present
+   - name: Clone the repository
+     git:
+       repo: 'https://github.com/vasanthan-hub/task-management-api.git'
+       dest: /home/ubuntu/task-management-api
+   - name: Run docker compose
+     shell:
+       cd /home/ubuntu/task-management-api
+       docker compose up -d --build

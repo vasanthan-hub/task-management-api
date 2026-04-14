@@ -1,0 +1,91 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "task-management-api"
+        INVENTORY = "ansible/inventory.yml"
+        PLAYBOOK = "ansible/playbook.yml"
+        HEALTH_URL = "http://your-ec2-public-ip:8080/actuator/health"
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Cloning repository...'
+                git url: 'https://github.com/vasanthan-hub/task-management-api.git', branch: 'main'
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                echo 'Giving permission to scripts...'
+                sh 'chmod +x ./scripts/*.sh'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                echo 'Building Spring Boot application...'
+                sh './scripts/build.sh'
+            }
+        }
+
+        stage('Verify Ansible') {
+            steps {
+                echo 'Checking Ansible installation...'
+                sh 'ansible --version'
+            }
+        }
+
+        stage('Run Ansible Deploy') {
+            steps {
+                echo 'Deploying application to EC2 using Ansible...'
+                sh '''
+                ansible-playbook -i $INVENTORY $PLAYBOOK
+                '''
+            }
+        }
+
+        stage('Wait for Startup') {
+            steps {
+                echo 'Waiting for application startup...'
+                sh 'sleep 20'
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                echo 'Checking deployed application health...'
+                sh './scripts/health-check.sh'
+        
+            }
+        }
+
+        stage('Deployment Info') {
+            steps {
+                echo 'Showing Ansible inventory...'
+                sh 'cat $INVENTORY'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful using Ansible! '
+        }
+
+        failure {
+            echo 'Deployment failed  Check Jenkins logs.'
+        }
+
+        always {
+            echo 'Pipeline execution completed.'
+        }
+    }
+}
