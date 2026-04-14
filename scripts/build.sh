@@ -11,4 +11,4 @@ if ! ls target/*.jar 1> /dev/null 2>&1; then
   exit 1
 fi
 
-echo "Build successful ✅"
+echo "Build successful "
